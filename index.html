@@ -1,35 +1,52 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>CPU Compare</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPU Compare</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="container">
+    <h1 class="title">Сравнение процессоров</h1>
 
-<h1>Сравнение процессоров</h1>
+    <!-- Поиск -->
+    <div class="searchBlock">
+      <div class="searchLabel">Поиск</div>
+      <input
+        id="searchInput"
+        class="searchInput"
+        type="text"
+        placeholder="Например: Ryzen 5 5600X / i7-12700K ..."
+        autocomplete="off"
+      />
+      <div id="searchResults" class="searchResults hidden"></div>
+    </div>
 
-<div class="picker">
-    <input id="search1" placeholder="Выберите процессор 1">
-    <div id="list1" class="dropdown"></div>
-</div>
+    <!-- Выбранные процессоры -->
+    <div class="selectedBlock">
+      <div class="selectedTitle">Название</div>
+      <div id="selectedList" class="selectedList"></div>
+    </div>
 
-<div class="picker">
-    <input id="search2" placeholder="Выберите процессор 2">
-    <div id="list2" class="dropdown"></div>
-</div>
+    <!-- Таблица -->
+    <div class="tableWrap">
+      <table class="compareTable">
+        <thead>
+          <tr>
+            <th class="col-name">Название</th>
+            <th>Частота (GHz)</th>
+            <th>Ядра</th>
+            <th>TDP</th>
+            <th>Socket</th>
+          </tr>
+        </thead>
+        <tbody id="compareBody"></tbody>
+      </table>
+    </div>
+  </div>
 
-<table>
-    <thead>
-        <tr>
-            <th>Параметр</th>
-            <th>CPU 1</th>
-            <th>CPU 2</th>
-        </tr>
-    </thead>
-    <tbody id="compare-table"></tbody>
-</table>
-
-<script src="script.js"></script>
+  <!-- ВАЖНО: без type="module" -->
+  <script src="script.js"></script>
 </body>
 </html>

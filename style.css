@@ -1,24 +1,111 @@
-.picker {
-    position: relative;
-    margin-bottom: 15px;
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #141821, #07080c);
+  color: #fff;
+  font-family: Inter, Arial, sans-serif;
 }
 
-.dropdown {
-    position: absolute;
-    width: 100%;
-    background: #1c1f26;
-    border: 1px solid #2a2d36;
-    max-height: 200px;
-    overflow-y: auto;
-    display: none;
-    z-index: 10;
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 20px 40px;
 }
 
-.dropdown div {
-    padding: 8px;
-    cursor: pointer;
+.title {
+  text-align: center;
+  font-size: 32px;
+  margin: 0 0 18px 0;
 }
 
-.dropdown div:hover {
-    background: #2a2d36;
+.searchBlock { position: relative; margin-bottom: 18px; }
+.searchLabel { text-align: center; opacity: .9; margin-bottom: 10px; }
+
+.searchInput {
+  width: 100%;
+  padding: 14px 16px;
+  background: #0f131a;
+  border: 1px solid #1f2430;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 16px;
+  outline: none;
 }
+
+.searchResults {
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(100% + 6px);
+  background: #0f131a;
+  border: 1px solid #1f2430;
+  border-radius: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.searchResults.hidden { display: none; }
+
+.searchItem {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #1f2430;
+}
+.searchItem:last-child { border-bottom: none; }
+
+.searchItem:hover { background: #1a2030; }
+
+.selectedBlock { margin: 10px 0 18px; }
+.selectedTitle { font-weight: 600; margin-bottom: 10px; }
+
+.selectedList { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.selectedCpu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0f131a;
+  border: 1px solid #1f2430;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.removeBtn {
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  border: 1px solid #3a3f50;
+  background: #141a24;
+  color: #ff6b6b;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 800;
+}
+
+.removeBtn:hover { filter: brightness(1.2); }
+
+.tableWrap { overflow-x: auto; }
+.compareTable {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.compareTable th {
+  background: #0f131a;
+  border-bottom: 1px solid #1f2430;
+  padding: 12px;
+  text-align: left;
+}
+
+.compareTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #1f2430;
+}
+
+.compareTable tbody tr:hover { background: #161b27; }
+
+.col-name { width: 420px; }

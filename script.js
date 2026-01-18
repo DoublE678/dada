@@ -1,105 +1,238 @@
+"use strict";
+
 let cpuData = [];
-let selected = { 1: null, 2: null };
+let selected = []; // массив объектов cpu
 
-fetch('tpu_cpus.csv')
-    .then(r => r.text())
-    .then(parseCSV);
+// DOM
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+const selectedList = document.getElementById("selectedList");
+const compareBody = document.getElementById("compareBody");
 
-function parseCSV(text) {
-    const lines = text.split('\n');
-    const headers = lines[0].split(',');
+// ---- Load CSV ----
+fetch("tpu_cpus.csv")
+  .then((r) => r.text())
+  .then((text) => {
+    cpuData = parseCSV(text);
+  })
+  .catch((e) => {
+    console.error(e);
+    alert("Не удалось загрузить tpu_cpus.csv. Запусти сайт через локальный сервер (Live Server / python -m http.server).");
+  });
 
-    for (let i = 1; i < lines.length; i++) {
-        if (!lines[i]) continue;
-        const values = lines[i].split(',');
-        let row = {};
-        headers.forEach((h, j) => row[h.trim()] = values[j]?.trim());
-        cpuData.push(processCPU(row));
+// Надёжный CSV splitter (учитывает кавычки)
+function splitCsvLine(line) {
+  const out = [];
+  let cur = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
     }
 
-    initPicker(1);
-    initPicker(2);
+    if (ch === "," && !inQuotes) {
+      out.push(cur);
+      cur = "";
+      continue;
+    }
+
+    cur += ch;
+  }
+  out.push(cur);
+  return out.map((s) => s.trim());
 }
 
-function processCPU(cpu) {
-    cpu.effectiveCores = parseCores(cpu.Cores);
-    cpu.maxClock = parseClock(cpu.Clock);
-    return cpu;
-}
+function parseCSV(text) {
+  const lines = text.replace(/\r/g, "").split("\n").filter((l) => l.trim().length > 0);
+  const headers = splitCsvLine(lines[0]);
 
-function parseCores(v) {
-    if (!v) return 0;
-    if (v.includes('/')) return Math.max(...v.split('/').map(Number));
-    return parseInt(v);
-}
-
-function parseClock(v) {
-    if (!v) return 0;
-    if (v.includes('to')) return parseFloat(v.split('to')[1]);
-    if (v.includes('MHz')) return parseFloat(v) / 1000;
-    return parseFloat(v);
-}
-
-/* ===== PICKER LOGIC ===== */
-
-function initPicker(id) {
-    const input = document.getElementById(search${id});
-    const list = document.getElementById(list${id});
-
-    input.addEventListener('focus', () => showList(id, ''));
-    input.addEventListener('input', e => showList(id, e.target.value));
-
-    document.addEventListener('click', e => {
-        if (!input.contains(e.target) && !list.contains(e.target)) {
-            list.style.display = 'none';
-        }
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = splitCsvLine(lines[i]);
+    const obj = {};
+    headers.forEach((h, idx) => {
+      obj[h] = values[idx] ?? "";
     });
+    if (obj.Name) rows.push(obj);
+  }
+  return rows;
 }
 
-function showList(id, query) {
-    const list = document.getElementById(list${id});
-    list.innerHTML = '';
+// ---- Search + Suggestions ----
+searchInput.addEventListener("input", () => {
+  const q = searchInput.value.toLowerCase().trim();
 
-    cpuData
-        .filter(c => c.Name.toLowerCase().includes(query.toLowerCase()))
-        .forEach(cpu => {
-            const item = document.createElement('div');
-            item.textContent = cpu.Name;
-            item.onclick = () => selectCPU(id, cpu);
-            list.appendChild(item);
-        });
+  if (!q) {
+    hideResults();
+    return;
+  }
 
-    list.style.display = 'block';
+  const results = cpuData
+    .filter((cpu) => cpu.Name && cpu.Name.toLowerCase().includes(q))
+    .slice(0, 12);
+
+  renderResults(results);
+});
+
+function renderResults(items) {
+  searchResults.innerHTML = "";
+
+  if (items.length === 0) {
+    const div = document.createElement("div");
+    div.className = "searchItem";
+    div.style.opacity = "0.85";
+    div.textContent = "Ничего не найдено";
+    searchResults.appendChild(div);
+    showResults();
+    return;
+  }
+
+  items.forEach((cpu) => {
+    const div = document.createElement("div");
+    div.className = "searchItem";
+    div.textContent = cpu.Name;
+    div.dataset.name = cpu.Name; // важно
+    searchResults.appendChild(div);
+  });
+
+  showResults();
 }
 
-function selectCPU(id, cpu) {
-    document.getElementById(search${id}).value = cpu.Name;
-    document.getElementById(list${id}).style.display = 'none';
-    selected[id] = cpu;
-    renderComparison();
+function showResults() {
+  searchResults.classList.remove("hidden");
+}
+function hideResults() {
+  searchResults.classList.add("hidden");
+  searchResults.innerHTML = "";
 }
 
-/* ===== COMPARISON TABLE ===== */
+// клик по подсказке — добавляем CPU (без inline onclick)
+searchResults.addEventListener("click", (e) => {
+  const item = e.target.closest(".searchItem");
+  if (!item) return;
 
-function renderComparison() {
-    const t = document.getElementById('compare-table');
-    t.innerHTML = '';
+  const name = item.dataset.name;
+  if (!name) return;
 
-    const rows = [
-        ['Частота (GHz)', c => c?.maxClock],
-        ['Ядра', c => c?.effectiveCores],
-        ['TDP (W)', c => c?.TDP],
-        ['Кэш L3', c => c?.L3_Cache],
-        ['Сокет', c => c?.Socket]
-    ];
+  const cpu = cpuData.find((c) => c.Name === name);
+  if (!cpu) return;
 
-    rows.forEach(([label, fn]) => {
-        t.innerHTML += 
-            <tr>
-                <td>${label}</td>
-                <td>${fn(selected[1]) || '—'}</td>
-                <td>${fn(selected[2]) || '—'}</td>
-            </tr>
-        ;
-    });
+  addCPU(cpu);
+});
+
+// клики вне поиска — закрыть подсказки
+document.addEventListener("click", (e) => {
+  if (e.target === searchInput) return;
+  if (searchResults.contains(e.target)) return;
+  hideResults();
+});
+
+// ---- Selected chips ----
+function addCPU(cpu) {
+  // уже выбран
+  if (selected.some((c) => c.Name === cpu.Name)) {
+    searchInput.value = "";
+    hideResults();
+    return;
+  }
+
+  // лимит 5
+  if (selected.length >= 5) {
+    alert("Можно сравнивать максимум 5 процессоров");
+    return;
+  }
+
+  selected.push(cpu);
+
+  searchInput.value = "";
+  hideResults();
+
+  renderSelected();
+  renderTable();
+}
+
+function removeCPUByName(name) {
+  selected = selected.filter((c) => c.Name !== name);
+  renderSelected();
+  renderTable();
+}
+
+// Рендер выбранных CPU: создаём DOM-элементы + addEventListener (кнопки точно работают)
+function renderSelected() {
+  selectedList.innerHTML = "";
+
+  selected.forEach((cpu) => {
+    const chip = document.createElement("div");
+    chip.className = "selectedCpu";
+
+
+    const btn = document.createElement("div");
+    btn.className = "removeBtn";
+    btn.textContent = "✕";
+    btn.dataset.name = cpu.Name;
+
+    const text = document.createElement("span");
+    text.textContent = cpu.Name;
+
+    // ВОТ ТУТ КНОПКА РАБОТАЕТ ГАРАНТИРОВАННО
+    btn.addEventListener("click", () => removeCPUByName(cpu.Name));
+
+    chip.appendChild(btn);
+    chip.appendChild(text);
+    selectedList.appendChild(chip);
+  });
+}
+
+// ---- Table ----
+function renderTable() {
+  compareBody.innerHTML = "";
+
+  selected.forEach((cpu) => {
+    const tr = document.createElement("tr");
+
+    tr.appendChild(td(cpu.Name));
+    tr.appendChild(td(toClockGHz(cpu.Clock)));
+    tr.appendChild(td(cpu.Cores || "—"));
+    tr.appendChild(td(cpu.TDP || "—"));
+    tr.appendChild(td(cpu.Socket || "—"));
+
+    compareBody.appendChild(tr);
+  });
+}
+
+function td(value) {
+  const el = document.createElement("td");
+  el.textContent = value ?? "—";
+  return el;
+}
+
+function toClockGHz(clockField) {
+  if (!clockField) return "—";
+
+  const v = String(clockField).toLowerCase();
+
+  // "4200 MHz"
+  if (v.includes("mhz")) {
+    const num = parseFloat(v);
+    return Number.isFinite(num) ? (num / 1000).toFixed(2) : "—";
+  }
+
+  // "3.6 to 4.2"
+  if (v.includes("to")) {
+    const parts = v.split("to").map((x) => parseFloat(x));
+    const max = parts[1];
+    return Number.isFinite(max) ? max.toFixed(2) : "—";
+  }
+
+  const num = parseFloat(v);
+  return Number.isFinite(num) ? num.toFixed(2) : "—";
 }
