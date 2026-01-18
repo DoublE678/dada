@@ -1,29 +1,111 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>CPU Compare</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CPU Compare</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-    <h1>Сравнение процессоров</h1>
+<body data-theme="modern">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">CPU</div>
+      <div class="titles">
+        <h1>Сравнение процессоров</h1>
+        <p class="subtitle">Выбери несколько моделей и сравни по параметрам</p>
+      </div>
+    </div>
 
-    <input type="text" id="search" placeholder="Поиск процессора...">
+    <div class="topbar-actions">
+      <label class="field">
+        <span class="label">Дизайн</span>
+        <select id="themeSelect" class="select">
+          <option value="modern">Современный</option>
+          <option value="retro">Начало 2000-х</option>
+        </select>
+      </label>
 
-    <table>
-        <thead>
+      <button id="clearSelection" class="btn">Очистить выбор</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Панель управления -->
+    <section class="panel card">
+      <div class="panel-row">
+        <label class="field grow">
+          <span class="label">Поиск</span>
+          <input type="text" id="search" class="input" placeholder="Например: Ryzen 5 5600X / i7-12700K ..." />
+        </label>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="statTitle">Загружено</div>
+            <div class="statValue" id="totalCount">—</div>
+          </div>
+          <div class="stat">
+            <div class="statTitle">Выбрано</div>
+            <div class="statValue" id="selectedCount">0</div>
+          </div>
+          <div class="stat">
+            <div class="statTitle">Найдено</div>
+            <div class="statValue" id="filteredCount">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-row">
+        <div class="field grow">
+          <div class="label">Параметры для сравнения</div>
+          <div id="columnsBox" class="chips"></div>
+        </div>
+      </div>
+
+      <div class="hint">
+        Совет: сначала выбери параметры, затем отметь нужные CPU в “каталоге” ниже — таблица сравнения обновится автоматически.
+      </div>
+    </section>
+
+    <!-- Таблица сравнения -->
+    <section class="card">
+      <div class="cardHead">
+        <h2>Таблица сравнения</h2>
+        <p class="muted">Строки — выбранные процессоры. Столбцы — параметры.</p>
+      </div>
+
+      <div class="tableWrap">
+        <table class="table" id="compareTable">
+          <thead id="compareHead"></thead>
+          <tbody id="compareBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Каталог -->
+    <section class="card">
+      <div class="cardHead">
+        <h2>Каталог процессоров</h2>
+        <p class="muted">Отметь галочками те, которые хочешь сравнить.</p>
+      </div>
+
+      <div class="tableWrap">
+        <table class="table">
+          <thead>
             <tr>
-                <th>Название</th>
-                <th>Частота (GHz)</th>
-                <th>Ядра</th>
-                <th>TDP (W)</th>
-                <th>Кэш L3</th>
-                <th>Сокет</th>
+              <th class="col-check">✓</th>
+              <th>Название</th>
+              <th class="col-small">Частота (GHz)</th>
+              <th class="col-small">Ядра</th>
+              <th class="col-small">TDP</th>
+              <th class="col-small">Socket</th>
             </tr>
-        </thead>
-        <tbody id="cpu-table"></tbody>
-    </table>
+          </thead>
+          <tbody id="catalogBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
 
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
