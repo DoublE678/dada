@@ -1,92 +1,132 @@
 "use strict";
 
 let cpuData = [];
-let selected = []; // массив объектов cpu
+let selected = [];
+let csvHeaders = [];
+let sortState = { column: null, dir: 1 };
 
-// DOM
-const searchInput = document.getElementById("searchInput");
+/* конфиг */
+
+const HIDDEN_COLUMNS = new Set(["ID"]);
+
+const NON_SORTABLE = new Set([
+  "Codename", "Code Name", "Коднейм",
+  "Socket", "Сокет",
+  "Release", "Release date", "Дата выхода", "Год выпуска", "Year"
+]);
+
+const INVERT_BETTER = new Set([
+  "Process", "Process (nm)", "Техпроцесс",
+  "TDP"
+]);
+
+const HEADER_RENAME = {
+  "L3_Cache": "Cache L3",
+};
+
+const searchInput   = document.getElementById("searchInput");
 const searchResults = document.getElementById("searchResults");
-const selectedList = document.getElementById("selectedList");
-const compareBody = document.getElementById("compareBody");
+const selectedList  = document.getElementById("selectedList");
+const compareHead   = document.getElementById("compareHead");
+const compareBody   = document.getElementById("compareBody");
 
-// ---- Load CSV ----
+/* csv */
 fetch("tpu_cpus.csv")
-  .then((r) => r.text())
-  .then((text) => {
+  .then(r => r.text())
+  .then(text => {
     cpuData = parseCSV(text);
   })
-  .catch((e) => {
-    console.error(e);
-    alert("Не удалось загрузить tpu_cpus.csv. Запусти сайт через локальный сервер (Live Server / python -m http.server).");
-  });
+  .catch(() => alert("CSV не загрузился. Проверь, что tpu_cpus.csv рядом и сайт запущен через сервер."));
 
-// Надёжный CSV splitter (учитывает кавычки)
+/* парсер */
 function splitCsvLine(line) {
   const out = [];
-  let cur = "";
-  let inQuotes = false;
+  let cur = "", inQuotes = false;
 
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
-
     if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        cur += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
+      if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQuotes = !inQuotes;
       continue;
     }
-
-    if (ch === "," && !inQuotes) {
-      out.push(cur);
-      cur = "";
-      continue;
-    }
-
+    if (ch === "," && !inQuotes) { out.push(cur); cur = ""; continue; }
     cur += ch;
   }
   out.push(cur);
-  return out.map((s) => s.trim());
+  return out.map(s => s.trim());
 }
 
 function parseCSV(text) {
-  const lines = text.replace(/\r/g, "").split("\n").filter((l) => l.trim().length > 0);
-  const headers = splitCsvLine(lines[0]);
+  const lines = text.replace(/\r/g, "").split("\n").filter(Boolean);
+  const originalHeaders = splitCsvLine(lines[0]);
+
+  const kept = [];
+  for (let i = 0; i < originalHeaders.length; i++) {
+    if (i === 0) continue;
+    kept.push({ name: originalHeaders[i].trim(), idx: i });
+  }
+
+  // заголовки , которые будем показывать в таблице
+  csvHeaders = kept.map(k => k.name);
 
   const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = splitCsvLine(lines[i]);
+  for (let li = 1; li < lines.length; li++) {
+    const vals = splitCsvLine(lines[li]);
     const obj = {};
-    headers.forEach((h, idx) => {
-      obj[h] = values[idx] ?? "";
-    });
+
+    for (const k of kept) {
+      obj[k.name] = (vals[k.idx] ?? "").trim();
+    }
+
     if (obj.Name) rows.push(obj);
   }
+
   return rows;
 }
 
-// ---- Search + Suggestions ----
+
+function parseNumber(val) {
+  if (!val) return NaN;
+  const num = parseFloat(String(val).replace(",", "."));
+  return Number.isFinite(num) ? num : NaN;
+}
+
+function alphaNumKey(name) {
+  const m = String(name).match(/(\d+)/);
+  return { text: String(name).toLowerCase(), num: m ? parseInt(m[1], 10) : 0 };
+}
+
+function hideResults() {
+  searchResults.classList.add("hidden");
+  searchResults.innerHTML = "";
+}
+
+function showResults() {
+  searchResults.classList.remove("hidden");
+}
+
+/* ===== Search (multi-word suggestions) ===== */
 searchInput.addEventListener("input", () => {
   const q = searchInput.value.toLowerCase().trim();
+  if (!q) return hideResults();
 
-  if (!q) {
-    hideResults();
-    return;
-  }
+  const parts = q.split(/\s+/).filter(Boolean);
 
-  const results = cpuData
-    .filter((cpu) => cpu.Name && cpu.Name.toLowerCase().includes(q))
-    .slice(0, 12);
+  const res = cpuData
+    .filter(cpu => {
+      const name = (cpu.Name || "").toLowerCase();
+      return parts.every(p => name.includes(p));
+    })
+    .slice(0, 12); 
 
-  renderResults(results);
+  renderResults(res);
 });
 
-function renderResults(items) {
+function renderResults(list) {
   searchResults.innerHTML = "";
 
-  if (items.length === 0) {
+  if (!list.length) {
     const div = document.createElement("div");
     div.className = "searchItem";
     div.style.opacity = "0.85";
@@ -96,58 +136,43 @@ function renderResults(items) {
     return;
   }
 
-  items.forEach((cpu) => {
+  list.forEach(cpu => {
     const div = document.createElement("div");
     div.className = "searchItem";
     div.textContent = cpu.Name;
-    div.dataset.name = cpu.Name; // важно
+    div.dataset.name = cpu.Name;
     searchResults.appendChild(div);
   });
 
   showResults();
 }
 
-function showResults() {
-  searchResults.classList.remove("hidden");
-}
-function hideResults() {
-  searchResults.classList.add("hidden");
-  searchResults.innerHTML = "";
-}
-
-// клик по подсказке — добавляем CPU (без inline onclick)
 searchResults.addEventListener("click", (e) => {
   const item = e.target.closest(".searchItem");
   if (!item) return;
-
   const name = item.dataset.name;
   if (!name) return;
 
-  const cpu = cpuData.find((c) => c.Name === name);
-  if (!cpu) return;
-
-  addCPU(cpu);
+  const cpu = cpuData.find(c => c.Name === name);
+  if (cpu) addCPU(cpu);
 });
 
-// клики вне поиска — закрыть подсказки
+
 document.addEventListener("click", (e) => {
   if (e.target === searchInput) return;
   if (searchResults.contains(e.target)) return;
   hideResults();
 });
 
-// ---- Selected chips ----
+/* процы */
 function addCPU(cpu) {
-  // уже выбран
-  if (selected.some((c) => c.Name === cpu.Name)) {
+  if (selected.some(c => c.Name === cpu.Name)) {
     searchInput.value = "";
     hideResults();
     return;
   }
-
-  // лимит 5
   if (selected.length >= 5) {
-    alert("Можно сравнивать максимум 5 процессоров");
+    alert("Максимум 5 процессоров");
     return;
   }
 
@@ -160,79 +185,109 @@ function addCPU(cpu) {
   renderTable();
 }
 
-function removeCPUByName(name) {
-  selected = selected.filter((c) => c.Name !== name);
+function removeCPU(name) {
+  selected = selected.filter(c => c.Name !== name);
   renderSelected();
   renderTable();
 }
 
-// Рендер выбранных CPU: создаём DOM-элементы + addEventListener (кнопки точно работают)
 function renderSelected() {
   selectedList.innerHTML = "";
-
-  selected.forEach((cpu) => {
+  selected.forEach(cpu => {
     const chip = document.createElement("div");
     chip.className = "selectedCpu";
-
 
     const btn = document.createElement("div");
     btn.className = "removeBtn";
     btn.textContent = "✕";
-    btn.dataset.name = cpu.Name;
+    btn.onclick = () => removeCPU(cpu.Name);
 
     const text = document.createElement("span");
     text.textContent = cpu.Name;
 
-    // ВОТ ТУТ КНОПКА РАБОТАЕТ ГАРАНТИРОВАННО
-    btn.addEventListener("click", () => removeCPUByName(cpu.Name));
-
-    chip.appendChild(btn);
-    chip.appendChild(text);
+    chip.append(btn, text);
     selectedList.appendChild(chip);
   });
 }
 
-// ---- Table ----
+/* табица */
 function renderTable() {
+  compareHead.innerHTML = "";
   compareBody.innerHTML = "";
+  if (!selected.length) return;
 
-  selected.forEach((cpu) => {
+  const trH = document.createElement("tr");
+  csvHeaders.forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = HEADER_RENAME[h] || h;
+
+    if (!NON_SORTABLE.has(h)) {
+      th.classList.add("sortable");
+      if (sortState.column === h) th.classList.add(sortState.dir === 1 ? "asc" : "desc");
+      th.onclick = () => toggleSort(h);
+    }
+
+    trH.appendChild(th);
+  });
+  compareHead.appendChild(trH);
+
+  if (sortState.column) {
+    const col = sortState.column;
+
+    selected.sort((a, b) => {
+      const av = parseNumber(a[col]);
+      const bv = parseNumber(b[col]);
+
+      if (!isNaN(av) && !isNaN(bv) && av !== bv) {
+        return (av - bv) * sortState.dir;
+      }
+
+      const ak = alphaNumKey(a.Name);
+      const bk = alphaNumKey(b.Name);
+      if (ak.text !== bk.text) return ak.text.localeCompare(bk.text);
+      return ak.num - bk.num;
+    });
+  }
+
+  const stats = {};
+  csvHeaders.forEach(h => {
+    const nums = selected.map(c => parseNumber(c[h])).filter(n => !isNaN(n));
+    if (nums.length > 1) {
+      const min = Math.min(...nums);
+      const max = Math.max(...nums);
+      if (min !== max) stats[h] = { min, max };
+    }
+  });
+
+  selected.forEach(cpu => {
     const tr = document.createElement("tr");
 
-    tr.appendChild(td(cpu.Name));
-    tr.appendChild(td(toClockGHz(cpu.Clock)));
-    tr.appendChild(td(cpu.Cores || "—"));
-    tr.appendChild(td(cpu.TDP || "—"));
-    tr.appendChild(td(cpu.Socket || "—"));
+    csvHeaders.forEach(h => {
+      const td = document.createElement("td");
+      const val = cpu[h] || "—";
+      td.textContent = val;
+
+      const num = parseNumber(val);
+      if (!isNaN(num) && stats[h]) {
+        const invert = INVERT_BETTER.has(h); 
+        if (invert) {
+          if (num === stats[h].min) td.classList.add("bestValue");
+          if (num === stats[h].max) td.classList.add("worstValue");
+        } else {
+          if (num === stats[h].max) td.classList.add("bestValue");
+          if (num === stats[h].min) td.classList.add("worstValue");
+        }
+      }
+
+      tr.appendChild(td);
+    });
 
     compareBody.appendChild(tr);
   });
 }
 
-function td(value) {
-  const el = document.createElement("td");
-  el.textContent = value ?? "—";
-  return el;
-}
-
-function toClockGHz(clockField) {
-  if (!clockField) return "—";
-
-  const v = String(clockField).toLowerCase();
-
-  // "4200 MHz"
-  if (v.includes("mhz")) {
-    const num = parseFloat(v);
-    return Number.isFinite(num) ? (num / 1000).toFixed(2) : "—";
-  }
-
-  // "3.6 to 4.2"
-  if (v.includes("to")) {
-    const parts = v.split("to").map((x) => parseFloat(x));
-    const max = parts[1];
-    return Number.isFinite(max) ? max.toFixed(2) : "—";
-  }
-
-  const num = parseFloat(v);
-  return Number.isFinite(num) ? num.toFixed(2) : "—";
+function toggleSort(col) {
+  if (sortState.column === col) sortState.dir *= -1;
+  else { sortState.column = col; sortState.dir = 1; }
+  renderTable();
 }

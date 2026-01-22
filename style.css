@@ -16,11 +16,21 @@ body {
 .title {
   text-align: center;
   font-size: 32px;
-  margin: 0 0 18px 0;
+  margin-bottom: 18px;
 }
 
-.searchBlock { position: relative; margin-bottom: 18px; }
-.searchLabel { text-align: center; opacity: .9; margin-bottom: 10px; }
+/* поиск */
+
+.searchBlock {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.searchLabel {
+  text-align: center;
+  opacity: .9;
+  margin-bottom: 10px;
+}
 
 .searchInput {
   width: 100%;
@@ -30,12 +40,12 @@ body {
   border-radius: 12px;
   color: #fff;
   font-size: 16px;
-  outline: none;
 }
 
 .searchResults {
   position: absolute;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   top: calc(100% + 6px);
   background: #0f131a;
   border: 1px solid #1f2430;
@@ -52,14 +62,25 @@ body {
   cursor: pointer;
   border-bottom: 1px solid #1f2430;
 }
+
 .searchItem:last-child { border-bottom: none; }
 
 .searchItem:hover { background: #1a2030; }
 
-.selectedBlock { margin: 10px 0 18px; }
-.selectedTitle { font-weight: 600; margin-bottom: 10px; }
+/* выбранные процы */
 
-.selectedList { display: flex; flex-wrap: wrap; gap: 10px; }
+.selectedBlock { margin-bottom: 20px; }
+
+.selectedTitle {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.selectedList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 
 .selectedCpu {
   display: flex;
@@ -81,13 +102,15 @@ body {
   display: grid;
   place-items: center;
   cursor: pointer;
-  user-select: none;
   font-weight: 800;
 }
 
 .removeBtn:hover { filter: brightness(1.2); }
 
+/* табличка */
+
 .tableWrap { overflow-x: auto; }
+
 .compareTable {
   width: 100%;
   min-width: 900px;
@@ -99,13 +122,48 @@ body {
   border-bottom: 1px solid #1f2430;
   padding: 12px;
   text-align: left;
+  white-space: nowrap;
 }
 
 .compareTable td {
   padding: 10px 12px;
   border-bottom: 1px solid #1f2430;
+  white-space: nowrap;
 }
 
 .compareTable tbody tr:hover { background: #161b27; }
 
-.col-name { width: 420px; }
+/* лучшие и худшие результаты */
+
+.bestValue {
+  outline: 2px solid #3fdc77;
+  outline-offset: -2px;
+}
+
+.worstValue {
+  outline: 2px solid #ff5c5c;
+  outline-offset: -2px;
+}
+
+/* Сортировка */
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable::after {
+  content: " ↕";
+  opacity: .4;
+  font-size: 12px;
+}
+
+.sortable.asc::after {
+  content: " ↑";
+  opacity: .9;
+}
+
+.sortable.desc::after {
+  content: " ↓";
+  opacity: .9;
+}

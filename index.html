@@ -7,46 +7,38 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1 class="title">Сравнение процессоров</h1>
 
-    <!-- Поиск -->
-    <div class="searchBlock">
-      <div class="searchLabel">Поиск</div>
-      <input
-        id="searchInput"
-        class="searchInput"
-        type="text"
-        placeholder="Например: Ryzen 5 5600X / i7-12700K ..."
-        autocomplete="off"
-      />
-      <div id="searchResults" class="searchResults hidden"></div>
-    </div>
+<div class="container">
+  <h1 class="title">Сравнение процессоров</h1>
 
-    <!-- Выбранные процессоры -->
-    <div class="selectedBlock">
-      <div class="selectedTitle">Выбраны</div>
-      <div id="selectedList" class="selectedList"></div>
-    </div>
-
-    <!-- Таблица -->
-    <div class="tableWrap">
-      <table class="compareTable">
-        <thead>
-          <tr>
-            <th class="col-name">Название</th>
-            <th>Частота (GHz)</th>
-            <th>Ядра</th>
-            <th>TDP</th>
-            <th>Socket</th>
-          </tr>
-        </thead>
-        <tbody id="compareBody"></tbody>
-      </table>
-    </div>
+  <!-- поиск -->
+  <div class="searchBlock">
+    <div class="searchLabel">Поиск</div>
+    <input
+      id="searchInput"
+      class="searchInput"
+      type="text"
+      placeholder="Например: Ryzen 5 5600X / i7-12700K"
+      autocomplete="off"
+    />
+    <div id="searchResults" class="searchResults hidden"></div>
   </div>
 
-  <!-- ВАЖНО: без type="module" -->
-  <script src="script.js"></script>
+  <!-- процы -->
+  <div class="selectedBlock">
+    <div class="selectedTitle">Название</div>
+    <div id="selectedList" class="selectedList"></div>
+  </div>
+
+  <!-- таблица -->
+  <div class="tableWrap">
+    <table class="compareTable">
+      <thead id="compareHead"></thead>
+      <tbody id="compareBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
