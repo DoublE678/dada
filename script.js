@@ -106,7 +106,7 @@ function showResults() {
   searchResults.classList.remove("hidden");
 }
 
-/* ===== Search (multi-word suggestions) ===== */
+
 searchInput.addEventListener("input", () => {
   const q = searchInput.value.toLowerCase().trim();
   if (!q) return hideResults();
